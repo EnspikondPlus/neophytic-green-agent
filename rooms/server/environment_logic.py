@@ -76,7 +76,6 @@ def decode_room_system(hex_str):
             idx += 1
         room_connections.append(row)
 
-    # Final sanity check
     assert idx == 100, f"Decoder misalignment: ended at bit {idx}"
 
     return {

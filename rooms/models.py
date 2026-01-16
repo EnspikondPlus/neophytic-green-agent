@@ -19,7 +19,6 @@ class RoomsObservation(Observation):
     current_room: int = Field(..., description="Agent's current room")
     committed: int = Field(..., description="If observation phase finished, 0 if not finished, 1 if finished")
 
-    # Partial map
     room_visited: List[int] = Field(
         ..., description="Which rooms have been visited, 0 if not visited, 1 if known"
     )
@@ -32,7 +31,6 @@ class RoomsObservation(Observation):
         ..., description="Observed room connections, 1 at index (i,j) means rooms i, j are connected"
     )
 
-    # Room-specific percepts (for current room)
     room_locked: List[int] = Field(
         ..., description="Whether current room is locked, -1 if unknown, 0 if unlocked, 1 if locked"
     )
@@ -45,12 +43,10 @@ class RoomsObservation(Observation):
         ..., description="Whether current room is the exit, -1 if unknown, 0 if not exit, 1 if exit"
     )
 
-    # Resources
     current_keys: int = Field(..., description="Keys currently held")
     steps_remaining: int = Field(..., description="Remaining step budget")
     obs_inspect_weight: float = Field(..., description="Cost of using inspect in observation phase")
 
-    # Failure signal (optional)
     failure_last: int = Field(
         ..., description="Whether last action failed, -1 if unknown, 0 if not failure, 1 if failure"
     )
@@ -61,22 +57,22 @@ class RoomsState(State):
     step_count: int
 
     # Map structure
-    room_included: List[int]                 # [8] 0/1
-    room_connections: List[List[int]]      # [8][8] adjacency (ground truth)
-    room_locked: List[int]                   # [8] 0/1
-    room_haskey: List[int]                   # [8] 0/1
-    room_exit: List[int]                     # [8] 0/1
+    room_included: List[int]         
+    room_connections: List[List[int]]    
+    room_locked: List[int]  
+    room_haskey: List[int]         
+    room_exit: List[int]     
 
     # Agent knowledge tracking (hidden)
     room_visited: List[int]
-    room_inspected: List[int]                # [8] 0/1
+    room_inspected: List[int]
 
     # Agent status
-    current_room: int                        # 0–7
+    current_room: int 
     current_keys: int
 
     # Phase control
-    committed: int                          # False = observe, True = execute
+    committed: int  
 
     # Budgeting
     steps_remaining: int
@@ -84,9 +80,9 @@ class RoomsState(State):
     weighted_steps_used: float
 
     # Failure handling
-    failure_show: bool                        # 0 = silent, 1 = 
+    failure_show: bool
     failure_consequence: bool
-    failure_last: int                        # 0/1 (used internally)
+    failure_last: int
 
     commit_reset: bool
     encoding: str
