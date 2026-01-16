@@ -1,19 +1,29 @@
-# A2A Agent Template
+# Neophytic Rooms Green Agent
 
-A minimal template for building [A2A (Agent-to-Agent)](https://a2a-protocol.org/latest/) green agents compatible with the [AgentBeats](https://agentbeats.dev) platform.
+A green agent for the AgentBeats competition built on the template for building [A2A (Agent-to-Agent)](https://a2a-protocol.org/latest/) green agents compatible with the [AgentBeats](https://agentbeats.dev) platform.
 
 ## Project Structure
 
 ```
 src/
-├─ server.py      # Server setup and agent card configuration
-├─ executor.py    # A2A request handling
-├─ agent.py       # Your agent implementation goes here
-└─ messenger.py   # A2A messaging utilities
+├─ server.py               # Server setup and agent card configuration
+├─ executor.py             # A2A request handling
+├─ agent.py                # Agent implementation
+├─ cli.py                  # Helper for cli commands and flags
+├─ benchmark_config.py     # Helper for parsing benchmark configs
+├─ benchmark_runner.py     # Helper for running multiple benchmarks
+├─ local_runtime.py        # Helper for A2A
+└─ messenger.py            # A2A messaging utilities
+rooms/
+└─ server/
+   ├─ environment_logic.py # Helper for environment functionality
+   └─ rooms_environment.py # OpenEnv environment manager
+├─ client.py               # OpenEnv client manager
+└─ models.                 # OpenEnv data class manager
 tests/
-└─ test_agent.py  # Agent tests
-Dockerfile        # Docker configuration
-pyproject.toml    # Python dependencies
+└─ test_agent.py           # Agent tests
+Dockerfile                 # Docker configuration
+pyproject.toml             # Python dependencies
 .github/
 └─ workflows/
    └─ test-and-publish.yml # CI workflow
@@ -21,64 +31,39 @@ pyproject.toml    # Python dependencies
 
 ## Getting Started
 
-1. **Create your repository** - Click "Use this template" to create your own repository from this template
+To see how to make a green agent for AgentBeats, see this [draft PR](https://github.com/RDI-Foundation/green-agent-template/pull/3).
 
-2. **Implement your agent** - Add your agent logic to [`src/agent.py`](src/agent.py)
-
-3. **Configure your agent card** - Fill in your agent's metadata (name, skills, description) in [`src/server.py`](src/server.py)
-
-4. **Write your tests** - Add custom tests for your agent in [`tests/test_agent.py`](tests/test_agent.py)
-
-For a concrete example of implementing a green agent using this template, see this [draft PR](https://github.com/RDI-Foundation/green-agent-template/pull/3).
-
-## Running Locally
+## Running Server Locally
 
 ```bash
-# Install dependencies
 uv sync
 
-# Run the server
-uv run src/server.py
+uv run green-server
 ```
 
-## Running with Docker
-
+## Running Tests Locally
 ```bash
-# Build the image
-docker build -t my-agent .
-
-# Run the container
-docker run -p 9009:9009 my-agent
-```
-
-## Testing
-
-Run A2A conformance tests against your agent.
-
-```bash
-# Install test dependencies
 uv sync --extra test
 
 uv run pytest tests/test_agent.py -v --start-server
 ```
 
-## Publishing
+## Running with Docker
+```bash
+docker build -t green-agent .
 
-The repository includes a GitHub Actions workflow that automatically builds, tests, and publishes a Docker image of your agent to GitHub Container Registry.
+# Preconfigured run (do this after the purple baseline server is up)
+docker run --rm --network agent-net -v "${PWD}/logs:/home/agent/logs" green-agent green-cli --purple-url http://purple-container:8000 --categories tutorial
 
-If your agent needs API keys or other secrets, add them in Settings → Secrets and variables → Actions → Repository secrets. They'll be available as environment variables during CI tests.
-
-- **Push to `main`** → publishes `latest` tag:
-```
-ghcr.io/<your-username>/<your-repo-name>:latest
-```
-
-- **Create a git tag** (e.g. `git tag v1.0.0 && git push origin v1.0.0`) → publishes version tags:
-```
-ghcr.io/<your-username>/<your-repo-name>:1.0.0
-ghcr.io/<your-username>/<your-repo-name>:1
+# On Powershell
+docker run --rm --network agent-net -v "${PWD}/logs:/home/agent/logs" green-agent green-cli --purple-url <purple_agent_address> --categories <task_category>
 ```
 
-Once the workflow completes, find your Docker image in the Packages section (right sidebar of your repository). Configure the package visibility in package settings.
+## About the Benchmark
+The Neophytic Rooms Green Agent administers that "Rooms" game benchmark, which is an original benchmark created for AgentBeats. The benchmark assess agents' abilities to navigate a system of rooms with limited and obfuscated information, resource management pressure, and high memory and planning requirements.
 
-> **Note:** Organization repositories may need package write permissions enabled manually (Settings → Actions → General). Version tags must follow [semantic versioning](https://semver.org/) (e.g., `v1.0.0`).
+Each configuration of the Rooms agent is a different system of 2-8 rooms. Rooms are connected together and may contain keys or be locked, but this is not visible to the agent until it INSPECTs a room. An agent starts in a room and must find its way to the exit over two phases. In each phase, the agent can choose from a small action space of MOVE, INSPECT, GETKEY, USEKEY, and COMMIT. MOVE moves the agent to an adjacent room to their current room, with some phase specific nuance. INSPECT allows the agent to inspect a room, learning adjacent room connections, and whether the room is locked, is the exit, or has a key. GETKEY allows the agent to pickup a key in a room, and USEKEY allows the agent to unlock a room by using a key. COMMIT changes the phase from Observation to Execution, and cannot be reversed.
+
+During the Observation phase, the agent is free to move around the room system, and every room they move into is automatically inspected. However, moving costs more during the Observation phase. Agents can move through locked rooms during Observation, but cannot leave using the exit, or GETKEY or USEKEY. After the Observation phase, the Agent may lose the state of observed rooms, and is reset to their starting room. During the Execution phase, agents have access to more actions and are now actively trying to find the exit and leave using knowledge gained in Observation. However, the number of actions (steps) agents have in Execution is limited.
+
+Using this system, the Rooms Green Agent tests agentic ability at logical reasoning with imperfect information, cost-benefit analysis, long-term memory, and failure recognition. There are several configurations of room-systems of various difficulty prebuilt into the Rooms agent, and additional configurations can be generated using an encoding schema, allowing for high scalability.
